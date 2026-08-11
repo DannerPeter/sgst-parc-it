@@ -9,8 +9,6 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
 import TicketsList from './pages/tickets/TicketsList'
-import TicketForm from './pages/tickets/TicketForm'
-import TicketDetail from './pages/tickets/TicketDetail'
 import AssetsList from './pages/assets/AssetsList'
 import AssetForm from './pages/assets/AssetForm'
 import AssetDetail from './pages/assets/AssetDetail'
@@ -36,26 +34,20 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* PUBLIQUES */}
+        {/* ---- PUBLIQUES ---- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTÉGÉES */}
+        {/* ---- PROTÉGÉES ---- */}
         <Route element={<DashboardLayout />}>
 
           {/* DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-          {/* TICKETS - URLs distinctes */}
+          {/* TICKETS - une seule route, tout géré en inline */}
           <Route path="/tickets" element={<ProtectedRoute><TicketsList /></ProtectedRoute>} />
-          <Route path="/nouveau-ticket" element={
-            <ProtectedRoute roles={['employe', 'admin_principal', 'admin_it']}>
-              <TicketForm />
-            </ProtectedRoute>
-          } />
-          <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
 
-          {/* ÉQUIPEMENTS - URLs distinctes */}
+          {/* ÉQUIPEMENTS */}
           <Route path="/assets" element={
             <ProtectedRoute roles={['admin_principal', 'admin_it', 'adjoint_it']}>
               <AssetsList />
@@ -75,16 +67,22 @@ export default function App() {
           {/* PROFIL */}
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-          {/* ADMIN */}
-          <Route path="/users" element={<ProtectedRoute roles={['admin_principal']}><UsersList /></ProtectedRoute>} />
-          <Route path="/departments" element={<ProtectedRoute roles={['admin_principal']}><Departments /></ProtectedRoute>} />
+          {/* ADMINISTRATION */}
+          <Route path="/users" element={
+            <ProtectedRoute roles={['admin_principal']}><UsersList /></ProtectedRoute>
+          } />
+          <Route path="/departments" element={
+            <ProtectedRoute roles={['admin_principal']}><Departments /></ProtectedRoute>
+          } />
 
-          {/* STATS */}
-          <Route path="/stats" element={<ProtectedRoute roles={['admin_principal', 'dg']}><Stats /></ProtectedRoute>} />
+          {/* STATISTIQUES */}
+          <Route path="/stats" element={
+            <ProtectedRoute roles={['admin_principal', 'dg']}><Stats /></ProtectedRoute>
+          } />
 
         </Route>
 
-        {/* DÉFAUT */}
+        {/* ---- DÉFAUT ---- */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
 
