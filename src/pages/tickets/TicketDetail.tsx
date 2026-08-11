@@ -21,6 +21,11 @@ export default function TicketDetail() {
   const [selectedStatus, setSelectedStatus] = useState('')
 
   useEffect(() => {
+    // ---- PROTECTION : si pas d'id valide, retour à la liste ----
+    if (!id || id === 'new') {
+      navigate('/tickets')
+      return
+    }
     fetchTicket()
     if (profile?.role === 'admin_it' || profile?.role === 'admin_principal') {
       fetchTechniciens()
@@ -28,6 +33,8 @@ export default function TicketDetail() {
   }, [id, profile])
 
   async function fetchTicket() {
+    // ---- PROTECTION SUPPLÉMENTAIRE ----
+    if (!id || id === 'new') return
     try {
       const { data, error } = await supabase
         .from('tickets')
@@ -45,7 +52,7 @@ export default function TicketDetail() {
       setLoading(false)
     }
   }
-
+  
   async function fetchTechniciens() {
     const { data } = await supabase
       .from('profiles')
