@@ -1,3 +1,11 @@
+// ============================================================
+// LOGIN.TSX - SGST GESTION PARC INFORMATIQUE
+// Page de connexion publique
+// Accessible sur : /login
+// Redirige vers : /dashboard après connexion réussie
+// Lien vers : /register pour créer un compte Admin
+// ============================================================
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -9,12 +17,15 @@ import { Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const navigate = useNavigate()
+
+  // ---- ÉTATS ----
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // ---- CONNEXION ----
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -24,20 +35,25 @@ export default function Login() {
 
     if (error) {
       setError('Email ou mot de passe incorrect')
+      setLoading(false)
+    } else {
+      // Redirection vers le dashboard après connexion réussie
+      navigate('/dashboard', { replace: true })
     }
-    setLoading(false)
   }
 
+  // ---- RENDU ----
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="w-full max-w-md px-4">
 
-        {/* Logo */}
+        {/* ---- LOGO ---- */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-800">SGST</h1>
           <p className="text-slate-500 mt-1">Gestion du Parc Informatique</p>
         </div>
 
+        {/* ---- CARTE CONNEXION ---- */}
         <Card>
           <CardHeader>
             <CardTitle className="text-center">Connexion</CardTitle>
@@ -45,7 +61,7 @@ export default function Login() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
 
-              {/* Email */}
+              {/* EMAIL */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -58,7 +74,7 @@ export default function Login() {
                 />
               </div>
 
-              {/* Mot de passe */}
+              {/* MOT DE PASSE */}
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
                 <div className="relative">
@@ -70,6 +86,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  {/* Bouton afficher/masquer mot de passe */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -80,17 +97,17 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Erreur */}
+              {/* MESSAGE ERREUR */}
               {error && (
                 <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>
               )}
 
-              {/* Bouton connexion */}
+              {/* BOUTON CONNEXION */}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Connexion...' : 'Se connecter'}
               </Button>
 
-              {/* Séparateur */}
+              {/* SÉPARATEUR */}
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200" />
@@ -100,7 +117,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Bouton inscription */}
+              {/* BOUTON INSCRIPTION ADMIN */}
               <Button
                 type="button"
                 variant="outline"
@@ -114,7 +131,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {/* ---- FOOTER ---- */}
         <p className="text-center text-xs text-slate-400 mt-6">
           SGST © {new Date().getFullYear()} — Gestion du Parc Informatique
         </p>
@@ -123,3 +140,4 @@ export default function Login() {
     </div>
   )
 }
+

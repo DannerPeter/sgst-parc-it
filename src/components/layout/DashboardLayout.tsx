@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Outlet } from 'react-router-dom'
+import { useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import Sidebar from './Sidebar'
 
@@ -10,7 +9,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     if (!loading && !profile) {
-      navigate('/login')
+      navigate('/login', { replace: true })
     }
   }, [profile, loading, navigate])
 
