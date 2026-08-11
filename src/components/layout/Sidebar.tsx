@@ -1,3 +1,8 @@
+// ============================================================
+// SIDEBAR.TSX - SGST GESTION PARC INFORMATIQUE
+// Barre de navigation latérale
+// ============================================================
+
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/button'
@@ -18,20 +23,24 @@ export default function Sidebar() {
   const location = useLocation()
 
   const isActive = (path: string) =>
-    location.pathname === path ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-600 hover:bg-slate-50'
+    location.pathname === path
+      ? 'bg-slate-100 text-slate-900 font-medium'
+      : 'text-slate-600 hover:bg-slate-50'
 
   const role = profile?.role
 
   return (
     <div className="flex flex-col h-full w-64 bg-white border-r border-slate-200 px-3 py-4">
-      {/* Logo */}
+
+      {/* ---- LOGO ---- */}
       <div className="px-3 mb-6">
         <h1 className="text-xl font-bold text-slate-800">SGST</h1>
         <p className="text-xs text-slate-400">Parc Informatique</p>
       </div>
 
-      {/* Nav */}
+      {/* ---- NAVIGATION ---- */}
       <nav className="flex-1 space-y-1">
+
         {/* Dashboard - tous */}
         <Link to="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/dashboard')}`}>
           <LayoutDashboard size={18} />
@@ -44,7 +53,7 @@ export default function Sidebar() {
           {role === 'employe' ? 'Mes demandes' : 'Tickets'}
         </Link>
 
-        {/* Équipements - pas employé */}
+        {/* Équipements - IT uniquement */}
         {role !== 'employe' && role !== 'dg' && (
           <Link to="/assets" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/assets')}`}>
             <Monitor size={18} />
@@ -60,11 +69,13 @@ export default function Sidebar() {
           </Link>
         )}
 
-        {/* Utilisateurs - admin principal */}
+        {/* Administration - admin principal uniquement */}
         {role === 'admin_principal' && (
           <>
             <Separator className="my-2" />
-            <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Administration</p>
+            <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Administration
+            </p>
             <Link to="/users" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/users')}`}>
               <Users size={18} />
               Utilisateurs
@@ -75,9 +86,10 @@ export default function Sidebar() {
             </Link>
           </>
         )}
+
       </nav>
 
-      {/* Profil + Déconnexion */}
+      {/* ---- PROFIL + DÉCONNEXION ---- */}
       <div className="border-t border-slate-200 pt-4 space-y-1">
         <Link to="/profile" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/profile')}`}>
           <User size={18} />
@@ -95,6 +107,7 @@ export default function Sidebar() {
           Déconnexion
         </Button>
       </div>
+
     </div>
   )
 }
