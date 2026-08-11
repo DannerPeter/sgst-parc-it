@@ -1,3 +1,10 @@
+// ============================================================
+// TICKETDETAIL.TSX - SGST GESTION PARC INFORMATIQUE
+// Page détail d'un ticket
+// Accessible sur : /tickets/:id
+// Rôles : tous (lecture) | IT (modification) | Employé (confirmation)
+// ============================================================
+
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -8,22 +15,25 @@ import { Label } from '../../components/ui/label'
 import { Textarea } from '../../components/ui/textarea'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 
+type TicketStatus = 'ouvert' | 'en_cours' | 'en_attente' | 'resolu' | 'clos'
+
 export default function TicketDetail() {
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
+
   const [ticket, setTicket] = useState<any>(null)
   const [techniciens, setTechniciens] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [resolution, setResolution] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState<TicketStatus>('ouvert')
 
   useEffect(() => {
-    // ---- PROTECTION : si pas d'id valide, retour à la liste ----
-    if (!id || id === 'new') {
-      navigate('/tickets')
+    // ---- PROTECTION : id invalide ou "new" → retour liste ----
+    if (!id || id === 'new' || id === 'undefined') {
+      navigate('/tickets', { replace: true })
       return
     }
     fetchTicket()
@@ -33,8 +43,9 @@ export default function TicketDetail() {
   }, [id, profile])
 
   async function fetchTicket() {
-    // ---- PROTECTION SUPPLÉMENTAIRE ----
-    if (!id || id === 'new') return
+    // ---- DOUBLE PROTECTION ----
+    if (!id || id === 'new' || id === 'undefined') return
+
     try {
       const { data, error } = await supabase
         .from('tickets')
@@ -45,14 +56,14 @@ export default function TicketDetail() {
       setTicket(data)
       setResolution(data?.resolution || '')
       setSelectedTech(data?.assigned_to || '')
-      setSelectedStatus(data?.status || 'ouvert')
+      setSelectedStatus((data?.status as TicketStatus) || 'ouvert')
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
   }
-  
+
   async function fetchTechniciens() {
     const { data } = await supabase
       .from('profiles')
@@ -132,7 +143,14 @@ export default function TicketDetail() {
   }
 
   if (loading) return <p className="text-slate-500">Chargement...</p>
-  if (!ticket) return <p className="text-slate-500">Ticket introuvable</p>
+  if (!ticket) return (
+    <div className="text-center py-12">
+      <p className="text-slate-400">Ticket introuvable</p>
+      <Button className="mt-4" onClick={() => navigate('/tickets')}>
+        Retour aux tickets
+      </Button>
+    </div>
+  )
 
   const isIT = ['admin_principal', 'admin_it', 'adjoint_it'].includes(profile?.role || '')
   const isOwner = profile?.id === ticket.requester_id
@@ -140,6 +158,8 @@ export default function TicketDetail() {
 
   return (
     <div className="space-y-6 max-w-3xl">
+
+      {/* ---- HEADER ---- */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/tickets')}>
           <ArrowLeft size={16} />
@@ -158,6 +178,7 @@ export default function TicketDetail() {
         </div>
       </div>
 
+      {/* ---- DÉTAILS ---- */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Détails de la demande</CardTitle>
@@ -179,9 +200,7 @@ export default function TicketDetail() {
             <div>
               <p className="text-slate-500">Équipement</p>
               <p className="font-medium">
-                {ticket.asset
-                  ? `${ticket.asset.reference} — ${ticket.asset.brand} ${ticket.asset.model}`
-                  : '—'}
+                {ticket.asset ? `${ticket.asset.reference} — ${ticket.asset.brand} ${ticket.asset.model}` : '—'}
               </p>
             </div>
           </div>
@@ -207,12 +226,15 @@ export default function TicketDetail() {
         </CardContent>
       </Card>
 
+      {/* ---- ACTIONS IT ---- */}
       {isIT && ticket.status !== 'clos' && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Actions technicien</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+
+            {/* Assigner technicien - admin seulement */}
             {(profile?.role === 'admin_it' || profile?.role === 'admin_principal') && (
               <div className="space-y-2">
                 <Label>Assigner à un technicien</Label>
@@ -231,11 +253,12 @@ export default function TicketDetail() {
               </div>
             )}
 
+            {/* Statut */}
             <div className="space-y-2">
               <Label>Statut</Label>
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => setSelectedStatus(e.target.value as TicketStatus)}
                 className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 <option value="ouvert">Ouvert</option>
@@ -246,6 +269,7 @@ export default function TicketDetail() {
               </select>
             </div>
 
+            {/* Note résolution */}
             <div className="space-y-2">
               <Label>Note / Résolution</Label>
               <Textarea
@@ -263,6 +287,7 @@ export default function TicketDetail() {
         </Card>
       )}
 
+      {/* ---- CONFIRMATION EMPLOYÉ ---- */}
       {canConfirm && (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="pt-6">
