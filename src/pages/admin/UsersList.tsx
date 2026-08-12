@@ -1,3 +1,8 @@
+// ============================================================
+// USERSLIST.TSX - SGST GESTION PARC INFORMATIQUE
+// Gestion des utilisateurs - Admin Principal uniquement
+// ============================================================
+
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../../components/ui/button'
@@ -55,26 +60,28 @@ export default function UsersList() {
     setError(null)
     setSuccess(null)
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-          role,
+        options: {
+          data: {
+            full_name: fullName,
+            role,
+          },
         },
       })
       if (error) throw error
 
-      // Mettre à jour le profil avec les infos supplémentaires
       if (data.user) {
-        await supabase.from('profiles').update({
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email,
           full_name: fullName,
           role,
           department_id: departmentId || null,
           matricule: matricule || null,
           phone: phone || null,
-        }).eq('id', data.user.id)
+        })
       }
 
       setSuccess(`Utilisateur ${fullName} créé avec succès !`)
@@ -114,6 +121,8 @@ export default function UsersList() {
 
   return (
     <div className="space-y-6">
+
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Utilisateurs</h1>
@@ -125,6 +134,7 @@ export default function UsersList() {
         </Button>
       </div>
 
+      {/* TABLEAU */}
       <Card>
         <CardContent className="p-0">
           {users.length === 0 ? (
@@ -183,7 +193,7 @@ export default function UsersList() {
         </CardContent>
       </Card>
 
-      {/* Dialog création utilisateur */}
+      {/* DIALOG CRÉATION */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -191,46 +201,20 @@ export default function UsersList() {
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4 mt-2">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nom complet *</Label>
-              <Input
-                id="fullName"
-                placeholder="Prénom Nom"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+              <Label>Nom complet *</Label>
+              <Input placeholder="Prénom Nom" value={fullName} onChange={e => setFullName(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@sgst.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label>Email *</Label>
+              <Input type="email" placeholder="email@sgst.com" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe *</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Minimum 6 caractères"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
+              <Label>Mot de passe *</Label>
+              <Input type="password" placeholder="Minimum 6 caractères" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Rôle *</Label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
+              <Label>Rôle *</Label>
+              <select value={role} onChange={e => setRole(e.target.value)} className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white">
                 <option value="employe">👤 Employé</option>
                 <option value="adjoint_it">🔧 Adjoint IT</option>
                 <option value="admin_it">🖥️ Administrateur IT</option>
@@ -239,37 +223,20 @@ export default function UsersList() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dept">Département</Label>
-              <select
-                id="dept"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
-              >
+              <Label>Département</Label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white">
                 <option value="">-- Aucun --</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
+                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="matricule">Matricule</Label>
-                <Input
-                  id="matricule"
-                  placeholder="Ex: EMP-001"
-                  value={matricule}
-                  onChange={(e) => setMatricule(e.target.value)}
-                />
+                <Label>Matricule</Label>
+                <Input placeholder="EMP-001" value={matricule} onChange={e => setMatricule(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
-                <Input
-                  id="phone"
-                  placeholder="+241 00 00 00 00"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
+                <Label>Téléphone</Label>
+                <Input placeholder="+241 00 00 00 00" value={phone} onChange={e => setPhone(e.target.value)} />
               </div>
             </div>
 
@@ -277,12 +244,8 @@ export default function UsersList() {
             {success && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md">✅ {success}</p>}
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Création...' : 'Créer'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
-                Annuler
-              </Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Création...' : 'Créer'}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Annuler</Button>
             </div>
           </form>
         </DialogContent>

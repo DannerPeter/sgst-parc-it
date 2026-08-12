@@ -1,6 +1,5 @@
 // ============================================================
 // SIDEBAR.TSX - SGST GESTION PARC INFORMATIQUE
-// Barre de navigation latérale
 // ============================================================
 
 import { Link, useLocation } from 'react-router-dom'
@@ -8,14 +7,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/button'
 import { Separator } from '../ui/separator'
 import {
-  LayoutDashboard,
-  Monitor,
-  Ticket,
-  Users,
-  Building2,
-  LogOut,
-  User,
-  BarChart3,
+  LayoutDashboard, Monitor, Ticket,
+  Users, Building2, LogOut, User, BarChart3,
 } from 'lucide-react'
 
 export default function Sidebar() {
@@ -32,28 +25,25 @@ export default function Sidebar() {
   return (
     <div className="flex flex-col h-full w-64 bg-white border-r border-slate-200 px-3 py-4">
 
-      {/* ---- LOGO ---- */}
+      {/* LOGO */}
       <div className="px-3 mb-6">
         <h1 className="text-xl font-bold text-slate-800">SGST</h1>
         <p className="text-xs text-slate-400">Parc Informatique</p>
       </div>
 
-      {/* ---- NAVIGATION ---- */}
+      {/* NAVIGATION */}
       <nav className="flex-1 space-y-1">
 
-        {/* Dashboard - tous */}
         <Link to="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/dashboard')}`}>
           <LayoutDashboard size={18} />
           Tableau de bord
         </Link>
 
-        {/* Tickets - tous */}
         <Link to="/tickets" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/tickets')}`}>
           <Ticket size={18} />
           {role === 'employe' ? 'Mes demandes' : 'Tickets'}
         </Link>
 
-        {/* Équipements - IT uniquement */}
         {role !== 'employe' && role !== 'dg' && (
           <Link to="/assets" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/assets')}`}>
             <Monitor size={18} />
@@ -61,7 +51,6 @@ export default function Sidebar() {
           </Link>
         )}
 
-        {/* Statistiques - DG + admin */}
         {(role === 'dg' || role === 'admin_principal') && (
           <Link to="/stats" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/stats')}`}>
             <BarChart3 size={18} />
@@ -69,7 +58,6 @@ export default function Sidebar() {
           </Link>
         )}
 
-        {/* Administration - admin principal uniquement */}
         {role === 'admin_principal' && (
           <>
             <Separator className="my-2" />
@@ -89,7 +77,7 @@ export default function Sidebar() {
 
       </nav>
 
-      {/* ---- PROFIL + DÉCONNEXION ---- */}
+      {/* PROFIL + DÉCONNEXION */}
       <div className="border-t border-slate-200 pt-4 space-y-1">
         <Link to="/profile" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive('/profile')}`}>
           <User size={18} />
