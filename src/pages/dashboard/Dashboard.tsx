@@ -167,16 +167,15 @@ export default function Dashboard() {
   }, [profile])
 
   // ---- FETCH USERS AVEC ASSETS (vue IT) ----
-  async function fetchUsersWithAssets() {
-    try {
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select('*, department:department_id(name), service:service_id(name)')
-        .eq('is_active', true)
-        .eq('role', 'employe')
-        .order('full_name')
+ async function fetchUsersWithAssets() {
+  try {
+    const { data: usersData } = await supabase
+      .from('profiles')
+      .select('*, department:department_id(name), service:service_id(name)')
+      .eq('is_active', true)
+      .order('full_name')
 
-      if (!usersData) return
+    if (!usersData) return
 
       const usersWithAssets = await Promise.all(
         usersData.map(async (user) => {
