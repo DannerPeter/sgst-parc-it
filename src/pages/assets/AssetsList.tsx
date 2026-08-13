@@ -151,6 +151,8 @@ function AssetForm({ onBack }: { onBack: () => void }) {
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isShared, setIsShared] = useState(false)
+  const [sharedUsers, setSharedUsers] = useState<string[]>([])
 
   const [reference, setReference] = useState('')
   const [type, setType] = useState('')
@@ -189,25 +191,37 @@ function AssetForm({ onBack }: { onBack: () => void }) {
     setUsers(data || [])
   }
 
+  function toggleSharedUser(id: string) {
+    setSharedUsers(prev => prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id])
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
     try {
-      const { error } = await supabase.from('assets').insert({
+      const { data, error } = await supabase.from('assets').insert({
         reference,
         type,
         brand: brand || null,
         model: model || null,
         serial_number: serialNumber || null,
         status,
-        assigned_to: assignedTo || null,
+        assigned_to: isShared ? null : (assignedTo || null),
         department_id: departmentId || null,
         service_id: serviceId || null,
         location: location || null,
         notes: notes || null,
-      })
+      }).select().single()
       if (error) throw error
+
+      // Enregistrer les utilisateurs partagés
+      if (isShared && sharedUsers.length > 0 && data) {
+        await supabase.from('asset_shared_users').insert(
+          sharedUsers.map(userId => ({ asset_id: data.id, user_id: userId }))
+        )
+      }
+
       onBack()
     } catch (err: any) {
       setError(err.message)
@@ -247,6 +261,7 @@ function AssetForm({ onBack }: { onBack: () => void }) {
                   <option value="Ordinateur fixe">Ordinateur fixe</option>
                   <option value="Ordinateur portable">Ordinateur portable</option>
                   <option value="Imprimante">Imprimante</option>
+                  <option value="Imprimante réseau">Imprimante réseau</option>
                   <option value="Scanner">Scanner</option>
                   <option value="Écran">Écran</option>
                   <option value="Serveur">Serveur</option>
@@ -286,12 +301,52 @@ function AssetForm({ onBack }: { onBack: () => void }) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Affecté à</label>
-              <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
-                <option value="">-- Non affecté --</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
-              </select>
+            {/* AFFECTATION */}
+            <div className="border border-slate-200 rounded-md p-4 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isShared}
+                  onChange={e => setIsShared(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium text-slate-700">
+                  Équipement partagé (ex: imprimante réseau)
+                </span>
+              </label>
+
+              {!isShared ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Affecté à</label>
+                  <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                    <option value="">-- Non affecté --</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Utilisateurs ayant accès à cet équipement
+                  </label>
+                  <div className="max-h-48 overflow-y-auto space-y-1 border border-slate-200 rounded-md p-2">
+                    {users.map(u => (
+                      <label key={u.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={sharedUsers.includes(u.id)}
+                          onChange={() => toggleSharedUser(u.id)}
+                          className="w-4 h-4"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-slate-800">{u.full_name || '—'}</p>
+                          <p className="text-xs text-slate-400">{u.email}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400">{sharedUsers.length} utilisateur(s) sélectionné(s)</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
