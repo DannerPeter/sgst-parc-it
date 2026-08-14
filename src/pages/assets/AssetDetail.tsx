@@ -144,8 +144,7 @@ export default function AssetDetail() {
   if (loading) return <p className="text-slate-500">Chargement...</p>
 
   return (
-    <div className="space-y-6 max-w-2xl">
-
+    <div id="asset-detail-content" className="space-y-6 max-w-2xl">
       {/* ---- HEADER ---- */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

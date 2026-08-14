@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Plus, Eye, Printer, Trash2 } from 'lucide-react'
+import { previewPrint } from '../../lib/print'
 
 type View = 'list' | 'new' | 'detail'
 
@@ -61,20 +62,20 @@ export default function AssetsList() {
 
   const canEdit = ['admin_principal', 'admin_it', 'adjoint_it'].includes(profile?.role || '')
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>
+  if (loading) return <p className="text-muted-foreground">Chargement...</p>
 
   return (
-    <div className="space-y-6">
+    <div id="assets-print-content" className="space-y-6">
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Équipements</h1>
-          <p className="text-slate-500 text-sm mt-1">{assets.length} équipement(s)</p>
+          <h1 className="text-2xl font-bold">Équipements</h1>
+          <p className="text-muted-foreground text-sm mt-1">{assets.length} équipement(s)</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()} className="flex items-center gap-2">
-            <Printer size={16} /> Imprimer
+          <Button variant="outline" onClick={() => previewPrint('assets-print-content')} className="flex items-center gap-2">
+            <Printer size={16} /> Aperçu PDF
           </Button>
           {canEdit && (
             <Button onClick={() => setView('new')} className="flex items-center gap-2">
@@ -89,7 +90,7 @@ export default function AssetsList() {
         <CardContent className="p-0">
           {assets.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-slate-400 mb-4">Aucun équipement enregistré</p>
+              <p className="text-muted-foreground mb-4">Aucun équipement enregistré</p>
               {canEdit && (
                 <Button onClick={() => setView('new')}>
                   <Plus size={16} className="mr-2" /> Ajouter un équipement
@@ -99,25 +100,25 @@ export default function AssetsList() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Référence</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Marque / Modèle</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Affecté à</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Département</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Action</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Référence</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Type</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Marque / Modèle</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Affecté à</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Département</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {assets.map((asset) => (
-                    <tr key={asset.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">{asset.reference}</td>
-                      <td className="px-4 py-3 text-slate-600">{asset.type}</td>
-                      <td className="px-4 py-3 text-slate-600">{asset.brand || '—'} {asset.model || ''}</td>
-                      <td className="px-4 py-3 text-slate-600">{asset.assigned?.full_name || asset.assigned?.email || '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">{asset.department?.name || '—'}</td>
+                    <tr key={asset.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs font-medium">{asset.reference}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{asset.type}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{asset.brand || '—'} {asset.model || ''}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{asset.assigned?.full_name || asset.assigned?.email || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{asset.department?.name || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor(asset.status)}`}>
                           {asset.status.replace('_', ' ')}
@@ -215,7 +216,6 @@ function AssetForm({ onBack }: { onBack: () => void }) {
       }).select().single()
       if (error) throw error
 
-      // Enregistrer les utilisateurs partagés
       if (isShared && sharedUsers.length > 0 && data) {
         await supabase.from('asset_shared_users').insert(
           sharedUsers.map(userId => ({ asset_id: data.id, user_id: userId }))
@@ -231,18 +231,23 @@ function AssetForm({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={onBack}>← Retour</Button>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Nouvel équipement</h1>
-          <p className="text-slate-500 text-sm">Enregistrer un équipement dans le parc</p>
+    <div id="asset-form-content" className="space-y-6 max-w-2xl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onBack}>← Retour</Button>
+          <div>
+            <h1 className="text-2xl font-bold">Nouvel équipement</h1>
+            <p className="text-muted-foreground text-sm">Enregistrer un équipement dans le parc</p>
+          </div>
         </div>
+        <Button variant="outline" onClick={() => previewPrint('asset-form-content')} className="flex items-center gap-2">
+          <Printer size={16} /> Aperçu PDF
+        </Button>
       </div>
 
       <Card>
-        <CardHeader className="pb-3 bg-slate-50 rounded-t-lg">
-          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <CardHeader className="pb-3 bg-muted rounded-t-lg">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wide">
             Informations de l'équipement
           </CardTitle>
         </CardHeader>
@@ -251,12 +256,12 @@ function AssetForm({ onBack }: { onBack: () => void }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Référence *</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: PC-001" value={reference} onChange={e => setReference(e.target.value)} required />
+                <label className="text-sm font-medium">Référence *</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: PC-001" value={reference} onChange={e => setReference(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Type *</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={type} onChange={e => setType(e.target.value)} required>
+                <label className="text-sm font-medium">Type *</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={type} onChange={e => setType(e.target.value)} required>
                   <option value="">-- Choisir --</option>
                   <option value="Ordinateur fixe">Ordinateur fixe</option>
                   <option value="Ordinateur portable">Ordinateur portable</option>
@@ -275,23 +280,23 @@ function AssetForm({ onBack }: { onBack: () => void }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Marque</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: Dell, HP..." value={brand} onChange={e => setBrand(e.target.value)} />
+                <label className="text-sm font-medium">Marque</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: Dell, HP..." value={brand} onChange={e => setBrand(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Modèle</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: Latitude 5420" value={model} onChange={e => setModel(e.target.value)} />
+                <label className="text-sm font-medium">Modèle</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: Latitude 5420" value={model} onChange={e => setModel(e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Numéro de série</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: SN123456" value={serialNumber} onChange={e => setSerialNumber(e.target.value)} />
+                <label className="text-sm font-medium">Numéro de série</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: SN123456" value={serialNumber} onChange={e => setSerialNumber(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Statut</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={status} onChange={e => setStatus(e.target.value)}>
+                <label className="text-sm font-medium">Statut</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={status} onChange={e => setStatus(e.target.value)}>
                   <option value="en_service">En service</option>
                   <option value="en_panne">En panne</option>
                   <option value="en_maintenance">En maintenance</option>
@@ -302,64 +307,50 @@ function AssetForm({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* AFFECTATION */}
-            <div className="border border-slate-200 rounded-md p-4 space-y-3">
+            <div className="border border-input rounded-md p-4 space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isShared}
-                  onChange={e => setIsShared(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm font-medium text-slate-700">
-                  Équipement partagé (ex: imprimante réseau)
-                </span>
+                <input type="checkbox" checked={isShared} onChange={e => setIsShared(e.target.checked)} className="w-4 h-4" />
+                <span className="text-sm font-medium">Équipement partagé (ex: imprimante réseau)</span>
               </label>
 
               {!isShared ? (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Affecté à</label>
-                  <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                  <label className="text-sm font-medium">Affecté à</label>
+                  <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
                     <option value="">-- Non affecté --</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
                   </select>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Utilisateurs ayant accès à cet équipement
-                  </label>
-                  <div className="max-h-48 overflow-y-auto space-y-1 border border-slate-200 rounded-md p-2">
+                  <label className="text-sm font-medium">Utilisateurs ayant accès</label>
+                  <div className="max-h-48 overflow-y-auto space-y-1 border border-input rounded-md p-2">
                     {users.map(u => (
-                      <label key={u.id} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={sharedUsers.includes(u.id)}
-                          onChange={() => toggleSharedUser(u.id)}
-                          className="w-4 h-4"
-                        />
+                      <label key={u.id} className="flex items-center gap-3 p-2 hover:bg-muted rounded cursor-pointer">
+                        <input type="checkbox" checked={sharedUsers.includes(u.id)} onChange={() => toggleSharedUser(u.id)} className="w-4 h-4" />
                         <div>
-                          <p className="text-sm font-medium text-slate-800">{u.full_name || '—'}</p>
-                          <p className="text-xs text-slate-400">{u.email}</p>
+                          <p className="text-sm font-medium">{u.full_name || '—'}</p>
+                          <p className="text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-400">{sharedUsers.length} utilisateur(s) sélectionné(s)</p>
+                  <p className="text-xs text-muted-foreground">{sharedUsers.length} utilisateur(s) sélectionné(s)</p>
                 </div>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Département</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={departmentId} onChange={e => setDepartmentId(e.target.value)}>
+                <label className="text-sm font-medium">Département</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={departmentId} onChange={e => setDepartmentId(e.target.value)}>
                   <option value="">-- Aucun --</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Service</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50" value={serviceId} onChange={e => setServiceId(e.target.value)} disabled={!departmentId}>
+                <label className="text-sm font-medium">Service</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" value={serviceId} onChange={e => setServiceId(e.target.value)} disabled={!departmentId}>
                   <option value="">-- Aucun --</option>
                   {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -367,13 +358,13 @@ function AssetForm({ onBack }: { onBack: () => void }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Localisation</label>
-              <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: Bâtiment A, Bureau 12" value={location} onChange={e => setLocation(e.target.value)} />
+              <label className="text-sm font-medium">Localisation</label>
+              <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: Bâtiment A, Bureau 12" value={location} onChange={e => setLocation(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Notes</label>
-              <textarea className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" rows={3} placeholder="Informations complémentaires..." value={notes} onChange={e => setNotes(e.target.value)} />
+              <label className="text-sm font-medium">Notes</label>
+              <textarea className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" rows={3} placeholder="Informations complémentaires..." value={notes} onChange={e => setNotes(e.target.value)} />
             </div>
 
             {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
@@ -396,6 +387,8 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
   const [departments, setDepartments] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [sharedUsers, setSharedUsers] = useState<string[]>([])
+  const [isShared, setIsShared] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -440,6 +433,16 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
         setLocation(data.location || '')
         setNotes(data.notes || '')
       }
+
+      // Charger les utilisateurs partagés
+      const { data: shared } = await supabase
+        .from('asset_shared_users')
+        .select('user_id')
+        .eq('asset_id', assetId)
+      if (shared && shared.length > 0) {
+        setIsShared(true)
+        setSharedUsers(shared.map(s => s.user_id))
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -462,6 +465,10 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
     setUsers(data || [])
   }
 
+  function toggleSharedUser(id: string) {
+    setSharedUsers(prev => prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id])
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -475,13 +482,22 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
         model: model || null,
         serial_number: serialNumber || null,
         status,
-        assigned_to: assignedTo || null,
+        assigned_to: isShared ? null : (assignedTo || null),
         department_id: departmentId || null,
         service_id: serviceId || null,
         location: location || null,
         notes: notes || null,
       }).eq('id', assetId)
       if (error) throw error
+
+      // Mettre à jour les utilisateurs partagés
+      await supabase.from('asset_shared_users').delete().eq('asset_id', assetId)
+      if (isShared && sharedUsers.length > 0) {
+        await supabase.from('asset_shared_users').insert(
+          sharedUsers.map(userId => ({ asset_id: assetId, user_id: userId }))
+        )
+      }
+
       setSuccess(true)
     } catch (err: any) {
       setError(err.message)
@@ -492,25 +508,26 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
 
   async function handleDelete() {
     if (!confirm('Supprimer cet équipement définitivement ?')) return
+    await supabase.from('asset_shared_users').delete().eq('asset_id', assetId)
     await supabase.from('assets').delete().eq('id', assetId)
     onBack()
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>
+  if (loading) return <p className="text-muted-foreground">Chargement...</p>
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div id="asset-detail-content" className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack}>← Retour</Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">{reference}</h1>
-            <p className="text-slate-500 text-sm">Modifier l'équipement</p>
+            <h1 className="text-2xl font-bold">{reference}</h1>
+            <p className="text-muted-foreground text-sm">Modifier l'équipement</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()} className="flex items-center gap-2">
-            <Printer size={16} /> Imprimer
+          <Button variant="outline" onClick={() => previewPrint('asset-detail-content')} className="flex items-center gap-2">
+            <Printer size={16} /> Aperçu PDF
           </Button>
           <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 flex items-center gap-2" onClick={handleDelete}>
             <Trash2 size={16} /> Supprimer
@@ -519,8 +536,8 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
       </div>
 
       <Card>
-        <CardHeader className="pb-3 bg-slate-50 rounded-t-lg">
-          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <CardHeader className="pb-3 bg-muted rounded-t-lg">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wide">
             Informations de l'équipement
           </CardTitle>
         </CardHeader>
@@ -529,16 +546,17 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Référence *</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" value={reference} onChange={e => setReference(e.target.value)} required />
+                <label className="text-sm font-medium">Référence *</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={reference} onChange={e => setReference(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Type *</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={type} onChange={e => setType(e.target.value)} required>
+                <label className="text-sm font-medium">Type *</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={type} onChange={e => setType(e.target.value)} required>
                   <option value="">-- Choisir --</option>
                   <option value="Ordinateur fixe">Ordinateur fixe</option>
                   <option value="Ordinateur portable">Ordinateur portable</option>
                   <option value="Imprimante">Imprimante</option>
+                  <option value="Imprimante réseau">Imprimante réseau</option>
                   <option value="Scanner">Scanner</option>
                   <option value="Écran">Écran</option>
                   <option value="Serveur">Serveur</option>
@@ -552,23 +570,23 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Marque</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" value={brand} onChange={e => setBrand(e.target.value)} />
+                <label className="text-sm font-medium">Marque</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={brand} onChange={e => setBrand(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Modèle</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" value={model} onChange={e => setModel(e.target.value)} />
+                <label className="text-sm font-medium">Modèle</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={model} onChange={e => setModel(e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Numéro de série</label>
-                <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" value={serialNumber} onChange={e => setSerialNumber(e.target.value)} />
+                <label className="text-sm font-medium">Numéro de série</label>
+                <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={serialNumber} onChange={e => setSerialNumber(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Statut</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={status} onChange={e => setStatus(e.target.value)}>
+                <label className="text-sm font-medium">Statut</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={status} onChange={e => setStatus(e.target.value)}>
                   <option value="en_service">En service</option>
                   <option value="en_panne">En panne</option>
                   <option value="en_maintenance">En maintenance</option>
@@ -578,25 +596,51 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Affecté à</label>
-              <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
-                <option value="">-- Non affecté --</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
-              </select>
+            {/* AFFECTATION */}
+            <div className="border border-input rounded-md p-4 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={isShared} onChange={e => setIsShared(e.target.checked)} className="w-4 h-4" />
+                <span className="text-sm font-medium">Équipement partagé (ex: imprimante réseau)</span>
+              </label>
+
+              {!isShared ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Affecté à</label>
+                  <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                    <option value="">-- Non affecté --</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Utilisateurs ayant accès</label>
+                  <div className="max-h-48 overflow-y-auto space-y-1 border border-input rounded-md p-2">
+                    {users.map(u => (
+                      <label key={u.id} className="flex items-center gap-3 p-2 hover:bg-muted rounded cursor-pointer">
+                        <input type="checkbox" checked={sharedUsers.includes(u.id)} onChange={() => toggleSharedUser(u.id)} className="w-4 h-4" />
+                        <div>
+                          <p className="text-sm font-medium">{u.full_name || '—'}</p>
+                          <p className="text-xs text-muted-foreground">{u.email}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{sharedUsers.length} utilisateur(s) sélectionné(s)</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Département</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300" value={departmentId} onChange={e => setDepartmentId(e.target.value)}>
+                <label className="text-sm font-medium">Département</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={departmentId} onChange={e => setDepartmentId(e.target.value)}>
                   <option value="">-- Aucun --</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Service</label>
-                <select className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50" value={serviceId} onChange={e => setServiceId(e.target.value)} disabled={!departmentId}>
+                <label className="text-sm font-medium">Service</label>
+                <select className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" value={serviceId} onChange={e => setServiceId(e.target.value)} disabled={!departmentId}>
                   <option value="">-- Aucun --</option>
                   {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -604,13 +648,13 @@ function AssetDetail({ assetId, onBack }: { assetId: string, onBack: () => void 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Localisation</label>
-              <input className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" placeholder="Ex: Bâtiment A, Bureau 12" value={location} onChange={e => setLocation(e.target.value)} />
+              <label className="text-sm font-medium">Localisation</label>
+              <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Ex: Bâtiment A, Bureau 12" value={location} onChange={e => setLocation(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Notes</label>
-              <textarea className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300" rows={3} value={notes} onChange={e => setNotes(e.target.value)} />
+              <label className="text-sm font-medium">Notes</label>
+              <textarea className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" rows={3} value={notes} onChange={e => setNotes(e.target.value)} />
             </div>
 
             {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}

@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Plus, Eye, Printer } from 'lucide-react'
+import { previewPrint } from '../../lib/print'
 
 type View = 'list' | 'new' | 'detail'
 
@@ -72,7 +73,7 @@ export default function TicketsList() {
   if (loading) return <p className="text-slate-500">Chargement...</p>
 
   return (
-    <div className="space-y-6">
+    <div id="print-content" className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
@@ -81,9 +82,10 @@ export default function TicketsList() {
           <p className="text-slate-500 text-sm mt-1">{tickets.length} ticket(s)</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()} className="flex items-center gap-2">
-            <Printer size={16} /> Imprimer
-          </Button>
+        // Nouveau
+        <Button variant="outline" onClick={() => previewPrint('print-content')} className="flex items-center gap-2">
+          <Printer size={16} /> Aperçu PDF
+           </Button>
           {['employe', 'admin_principal', 'admin_it'].includes(profile?.role || '') && (
             <Button onClick={() => setView('new')} className="flex items-center gap-2">
               <Plus size={16} /> Nouvelle demande
