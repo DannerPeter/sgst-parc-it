@@ -11,6 +11,7 @@ import { Input } from '../../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Label } from '../../components/ui/label'
 import { Printer } from 'lucide-react'
+import { previewPrint } from '../../lib/print'
 
 export default function Profile() {
   const { profile } = useAuth()
@@ -62,11 +63,7 @@ export default function Profile() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: fullName,
-          phone,
-          matricule,
-        })
+        .update({ full_name: fullName, phone, matricule })
         .eq('id', profile?.id)
       if (error) throw error
       setSuccess(true)
@@ -95,57 +92,57 @@ export default function Profile() {
     }
   }
 
-  if (!profile) return <p className="text-slate-500">Chargement...</p>
+  if (!profile) return <p className="text-muted-foreground">Chargement...</p>
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div id="profile-content" className="space-y-6 max-w-2xl">
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Mon profil</h1>
-          <p className="text-slate-500 text-sm mt-1">Consultez et modifiez vos informations</p>
+          <h1 className="text-2xl font-bold">Mon profil</h1>
+          <p className="text-muted-foreground text-sm mt-1">Consultez et modifiez vos informations</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()} className="flex items-center gap-2">
-          <Printer size={16} /> Imprimer
+        <Button variant="outline" onClick={() => previewPrint('profile-content')} className="flex items-center gap-2">
+          <Printer size={16} /> Aperçu PDF
         </Button>
       </div>
 
       {/* INFOS NON MODIFIABLES */}
       <Card>
-        <CardHeader className="pb-3 bg-slate-50 rounded-t-lg">
-          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <CardHeader className="pb-3 bg-muted rounded-t-lg">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wide">
             Informations du compte
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="col-span-2 flex items-center gap-4 pb-3 border-b border-slate-100">
+            <div className="col-span-2 flex items-center gap-4 pb-3 border-b border-border">
               <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-xl">
                 {(profile.full_name || profile.email || '?')[0].toUpperCase()}
               </div>
               <div>
-                <p className="font-semibold text-slate-800 text-base">{profile.full_name || '—'}</p>
-                <p className="text-slate-500">{profile.email}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 mt-1 inline-block">
+                <p className="font-semibold text-base">{profile.full_name || '—'}</p>
+                <p className="text-muted-foreground">{profile.email}</p>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-foreground mt-1 inline-block">
                   {roleLabel[profile.role] || profile.role}
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-slate-400 text-xs mb-1">Département</p>
-              <p className="font-medium text-slate-800">{department?.name || '—'}</p>
+              <p className="text-muted-foreground text-xs mb-1">Département</p>
+              <p className="font-medium">{department?.name || '—'}</p>
             </div>
             <div>
-              <p className="text-slate-400 text-xs mb-1">Service</p>
-              <p className="font-medium text-slate-800">{service?.name || '—'}</p>
+              <p className="text-muted-foreground text-xs mb-1">Service</p>
+              <p className="font-medium">{service?.name || '—'}</p>
             </div>
             <div>
-              <p className="text-slate-400 text-xs mb-1">Membre depuis</p>
-              <p className="font-medium text-slate-800">{new Date(profile.created_at).toLocaleDateString('fr-FR')}</p>
+              <p className="text-muted-foreground text-xs mb-1">Membre depuis</p>
+              <p className="font-medium">{new Date(profile.created_at).toLocaleDateString('fr-FR')}</p>
             </div>
             <div>
-              <p className="text-slate-400 text-xs mb-1">Statut</p>
+              <p className="text-muted-foreground text-xs mb-1">Statut</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${profile.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                 {profile.is_active ? 'Actif' : 'Inactif'}
               </span>
@@ -156,8 +153,8 @@ export default function Profile() {
 
       {/* INFOS MODIFIABLES */}
       <Card>
-        <CardHeader className="pb-3 bg-slate-50 rounded-t-lg">
-          <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+        <CardHeader className="pb-3 bg-muted rounded-t-lg">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wide">
             Modifier mes informations
           </CardTitle>
         </CardHeader>
@@ -165,30 +162,15 @@ export default function Profile() {
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nom complet</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                placeholder="Prénom Nom"
-              />
+              <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Prénom Nom" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Téléphone</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="+241 00 00 00 00"
-              />
+              <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+241 00 00 00 00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="matricule">Matricule</Label>
-              <Input
-                id="matricule"
-                value={matricule}
-                onChange={e => setMatricule(e.target.value)}
-                placeholder="Ex: EMP-001"
-              />
+              <Input id="matricule" value={matricule} onChange={e => setMatricule(e.target.value)} placeholder="Ex: EMP-001" />
             </div>
 
             {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
@@ -204,17 +186,17 @@ export default function Profile() {
       {/* MES ÉQUIPEMENTS */}
       {assets.length > 0 && (
         <Card>
-          <CardHeader className="pb-3 bg-slate-50 rounded-t-lg">
-            <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+          <CardHeader className="pb-3 bg-muted rounded-t-lg">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wide">
               Mes équipements
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-2">
             {assets.map(asset => (
-              <div key={asset.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+              <div key={asset.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{asset.reference} — {asset.brand} {asset.model}</p>
-                  <p className="text-xs text-slate-400">{asset.type}</p>
+                  <p className="text-sm font-medium">{asset.reference} — {asset.brand} {asset.model}</p>
+                  <p className="text-xs text-muted-foreground">{asset.type}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor(asset.status)}`}>
                   {asset.status.replace('_', ' ')}
@@ -228,3 +210,4 @@ export default function Profile() {
     </div>
   )
 }
+
