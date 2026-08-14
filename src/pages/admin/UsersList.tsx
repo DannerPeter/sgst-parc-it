@@ -1,6 +1,6 @@
 // ============================================================
 // USERSLIST.TSX - SGST GESTION PARC INFORMATIQUE
-// Gestion des utilisateurs - Admin Principal uniquement
+// Gestion utilisateurs - création + modification + activation
 // ============================================================
 
 import { useEffect, useState } from 'react'
@@ -12,15 +12,19 @@ import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Plus, Pencil } from 'lucide-react'
 
+type ViewMode = 'list' | 'create' | 'edit'
+
 export default function UsersList() {
   const [users, setUsers] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showDialog, setShowDialog] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [selectedUser, setSelectedUser] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  // Champs formulaire
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -54,7 +58,42 @@ export default function UsersList() {
     setDepartments(data || [])
   }
 
-  async function handleCreateUser(e: React.FormEvent) {
+  // ---- OUVRIR FORMULAIRE CRÉATION ----
+  function openCreate() {
+    resetForm()
+    setError(null)
+    setSuccess(null)
+    setViewMode('create')
+  }
+
+  // ---- OUVRIR FORMULAIRE MODIFICATION ----
+  function openEdit(user: any) {
+    setSelectedUser(user)
+    setFullName(user.full_name || '')
+    setEmail(user.email || '')
+    setPassword('')
+    setRole(user.role || 'employe')
+    setDepartmentId(user.department_id || '')
+    setMatricule(user.matricule || '')
+    setPhone(user.phone || '')
+    setError(null)
+    setSuccess(null)
+    setViewMode('edit')
+  }
+
+  function resetForm() {
+    setFullName('')
+    setEmail('')
+    setPassword('')
+    setRole('employe')
+    setDepartmentId('')
+    setMatricule('')
+    setPhone('')
+    setSelectedUser(null)
+  }
+
+  // ---- CRÉER UTILISATEUR ----
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError(null)
@@ -64,10 +103,7 @@ export default function UsersList() {
         email,
         password,
         options: {
-          data: {
-            full_name: fullName,
-            role,
-          },
+          data: { full_name: fullName, role },
         },
       })
       if (error) throw error
@@ -84,9 +120,10 @@ export default function UsersList() {
         })
       }
 
-      setSuccess(`Utilisateur ${fullName} créé avec succès !`)
+      setSuccess(`✅ Utilisateur ${fullName} créé avec succès !`)
       resetForm()
       fetchUsers()
+      setTimeout(() => setViewMode('list'), 1500)
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création')
     } finally {
@@ -94,19 +131,39 @@ export default function UsersList() {
     }
   }
 
+  // ---- MODIFIER UTILISATEUR ----
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          role,
+          department_id: departmentId || null,
+          matricule: matricule || null,
+          phone: phone || null,
+        })
+        .eq('id', selectedUser.id)
+      if (error) throw error
+
+      setSuccess('✅ Utilisateur mis à jour avec succès !')
+      fetchUsers()
+      setTimeout(() => setViewMode('list'), 1500)
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la modification')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ---- ACTIVER / DÉSACTIVER ----
   async function toggleActive(userId: string, current: boolean) {
     await supabase.from('profiles').update({ is_active: !current }).eq('id', userId)
     fetchUsers()
-  }
-
-  function resetForm() {
-    setFullName('')
-    setEmail('')
-    setPassword('')
-    setRole('employe')
-    setDepartmentId('')
-    setMatricule('')
-    setPhone('')
   }
 
   const roleLabel: Record<string, string> = {
@@ -117,18 +174,116 @@ export default function UsersList() {
     employe: '👤 Employé',
   }
 
-  if (loading) return <p className="text-slate-500">Chargement...</p>
+  if (loading) return <p className="text-muted-foreground">Chargement...</p>
 
+  // ============================================================
+  // VUE FORMULAIRE CRÉATION
+  // ============================================================
+  if (viewMode === 'create' || viewMode === 'edit') {
+    return (
+      <div className="space-y-6 max-w-2xl">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setViewMode('list')}>← Retour</Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {viewMode === 'create' ? 'Nouvel utilisateur' : `Modifier — ${selectedUser?.full_name || selectedUser?.email}`}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              {viewMode === 'create' ? 'Créer un nouveau compte utilisateur' : 'Modifier les informations de cet utilisateur'}
+            </p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            <form onSubmit={viewMode === 'create' ? handleCreate : handleEdit} className="space-y-4">
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nom complet *</Label>
+                  <Input placeholder="Prénom Nom" value={fullName} onChange={e => setFullName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    placeholder="email@sgst.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    disabled={viewMode === 'edit'}
+                    className={viewMode === 'edit' ? 'opacity-50 cursor-not-allowed' : ''}
+                  />
+                </div>
+              </div>
+
+              {viewMode === 'create' && (
+                <div className="space-y-2">
+                  <Label>Mot de passe *</Label>
+                  <Input type="password" placeholder="Minimum 6 caractères" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Rôle *</Label>
+                  <select value={role} onChange={e => setRole(e.target.value)} className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="employe">👤 Employé</option>
+                    <option value="adjoint_it">🔧 Adjoint IT</option>
+                    <option value="admin_it">🖥️ Administrateur IT</option>
+                    <option value="dg">📊 Direction Générale</option>
+                    <option value="admin_principal">👑 Administrateur Principal</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Département</Label>
+                  <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="">-- Aucun --</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Matricule</Label>
+                  <Input placeholder="EMP-001" value={matricule} onChange={e => setMatricule(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Téléphone</Label>
+                  <Input placeholder="+241 00 00 00 00" value={phone} onChange={e => setPhone(e.target.value)} />
+                </div>
+              </div>
+
+              {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
+              {success && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md">{success}</p>}
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Enregistrement...' : viewMode === 'create' ? 'Créer' : 'Enregistrer'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setViewMode('list')}>Annuler</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // ============================================================
+  // VUE LISTE
+  // ============================================================
   return (
     <div className="space-y-6">
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Utilisateurs</h1>
-          <p className="text-slate-500 text-sm mt-1">{users.length} utilisateur(s)</p>
+          <h1 className="text-2xl font-bold">Utilisateurs</h1>
+          <p className="text-muted-foreground text-sm mt-1">{users.length} utilisateur(s)</p>
         </div>
-        <Button onClick={() => { setShowDialog(true); setError(null); setSuccess(null) }} className="flex items-center gap-2">
+        <Button onClick={openCreate} className="flex items-center gap-2">
           <Plus size={16} />
           Nouvel utilisateur
         </Button>
@@ -139,50 +294,60 @@ export default function UsersList() {
         <CardContent className="p-0">
           {users.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-slate-400">Aucun utilisateur</p>
+              <p className="text-muted-foreground">Aucun utilisateur</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Nom</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Rôle</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Département</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-600">Action</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nom</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Rôle</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Département</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-slate-800">
+                    <tr key={user.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-3 font-medium">
                         {user.full_name || '—'}
-                        {user.matricule && <span className="ml-2 text-xs text-slate-400">({user.matricule})</span>}
+                        {user.matricule && <span className="ml-2 text-xs text-muted-foreground">({user.matricule})</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{user.email}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+                        <span className="text-xs px-2 py-1 rounded-full bg-muted text-foreground font-medium">
                           {roleLabel[user.role] || user.role}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{user.department?.name || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{user.department?.name || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {user.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleActive(user.id, user.is_active)}
-                          className="flex items-center gap-1 text-xs"
-                        >
-                          <Pencil size={12} />
-                          {user.is_active ? 'Désactiver' : 'Activer'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(user)}
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            <Pencil size={12} />
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActive(user.id, user.is_active)}
+                            className={`text-xs ${user.is_active ? 'text-red-500 hover:text-red-600' : 'text-green-500 hover:text-green-600'}`}
+                          >
+                            {user.is_active ? 'Désactiver' : 'Activer'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -192,64 +357,6 @@ export default function UsersList() {
           )}
         </CardContent>
       </Card>
-
-      {/* DIALOG CRÉATION */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Créer un utilisateur</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateUser} className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label>Nom complet *</Label>
-              <Input placeholder="Prénom Nom" value={fullName} onChange={e => setFullName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Email *</Label>
-              <Input type="email" placeholder="email@sgst.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Mot de passe *</Label>
-              <Input type="password" placeholder="Minimum 6 caractères" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-            </div>
-            <div className="space-y-2">
-              <Label>Rôle *</Label>
-              <select value={role} onChange={e => setRole(e.target.value)} className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white">
-                <option value="employe">👤 Employé</option>
-                <option value="adjoint_it">🔧 Adjoint IT</option>
-                <option value="admin_it">🖥️ Administrateur IT</option>
-                <option value="dg">📊 Direction Générale</option>
-                <option value="admin_principal">👑 Administrateur Principal</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Département</Label>
-              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white">
-                <option value="">-- Aucun --</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Matricule</Label>
-                <Input placeholder="EMP-001" value={matricule} onChange={e => setMatricule(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Téléphone</Label>
-                <Input placeholder="+241 00 00 00 00" value={phone} onChange={e => setPhone(e.target.value)} />
-              </div>
-            </div>
-
-            {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
-            {success && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-md">✅ {success}</p>}
-
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={saving}>{saving ? 'Création...' : 'Créer'}</Button>
-              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Annuler</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

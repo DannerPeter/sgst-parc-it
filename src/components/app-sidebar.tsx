@@ -1,14 +1,14 @@
 // ============================================================
 // APP-SIDEBAR.TSX - SGST GESTION PARC INFORMATIQUE
-// Sidebar collapsible avec icônes - style shadcn sidebar-07
+// Sidebar collapsible avec icônes
 // ============================================================
 
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
-  LayoutDashboard, Monitor, Ticket,
-  Users, Building2, LogOut, User,
-  BarChart3, ChevronUp,
+  LayoutDashboard, Monitor, Ticket, Users,
+  Building2, LogOut, User, BarChart3,
+  ChevronUp, BookOpen,
 } from 'lucide-react'
 import {
   Sidebar, SidebarContent, SidebarFooter,
@@ -32,15 +32,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
 
-      {/* ---- HEADER ---- */}
+      {/* ---- LOGO ---- */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              onClick={() => navigate('/dashboard')}
-              isActive={isActive('/dashboard')}
-            >
+            <SidebarMenuButton size="lg" onClick={() => navigate('/dashboard')}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-slate-900 text-white">
                 <Monitor className="size-4" />
               </div>
@@ -53,57 +49,53 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* ---- CONTENU ---- */}
+      {/* ---- NAVIGATION ---- */}
       <SidebarContent>
-
-        {/* NAVIGATION PRINCIPALE */}
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
 
+              {/* DASHBOARD */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate('/dashboard')}
-                  isActive={isActive('/dashboard')}
-                  tooltip="Tableau de bord"
-                >
+                <SidebarMenuButton onClick={() => navigate('/dashboard')} isActive={isActive('/dashboard')} tooltip="Tableau de bord">
                   <LayoutDashboard />
                   <span>Tableau de bord</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* TICKETS */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate('/tickets')}
-                  isActive={isActive('/tickets')}
-                  tooltip="Tickets"
-                >
+                <SidebarMenuButton onClick={() => navigate('/tickets')} isActive={isActive('/tickets')} tooltip="Tickets">
                   <Ticket />
                   <span>{role === 'employe' ? 'Mes demandes' : 'Tickets'}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* ÉQUIPEMENTS - IT uniquement */}
               {role !== 'employe' && role !== 'dg' && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/assets')}
-                    isActive={isActive('/assets')}
-                    tooltip="Équipements"
-                  >
+                  <SidebarMenuButton onClick={() => navigate('/assets')} isActive={isActive('/assets')} tooltip="Équipements">
                     <Monitor />
                     <span>Équipements</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
 
+              {/* JOURNAL IT */}
+              {role !== 'employe' && role !== 'dg' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate('/journal')} isActive={isActive('/journal')} tooltip="Journal IT">
+                    <BookOpen />
+                    <span>Journal IT</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* STATISTIQUES */}
               {(role === 'dg' || role === 'admin_principal') && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/stats')}
-                    isActive={isActive('/stats')}
-                    tooltip="Statistiques"
-                  >
+                  <SidebarMenuButton onClick={() => navigate('/stats')} isActive={isActive('/stats')} tooltip="Statistiques">
                     <BarChart3 />
                     <span>Statistiques</span>
                   </SidebarMenuButton>
@@ -114,7 +106,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* ADMINISTRATION */}
+        {/* ---- ADMINISTRATION ---- */}
         {role === 'admin_principal' && (
           <>
             <SidebarSeparator />
@@ -123,21 +115,13 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate('/users')}
-                      isActive={isActive('/users')}
-                      tooltip="Utilisateurs"
-                    >
+                    <SidebarMenuButton onClick={() => navigate('/users')} isActive={isActive('/users')} tooltip="Utilisateurs">
                       <Users />
                       <span>Utilisateurs</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => navigate('/departments')}
-                      isActive={isActive('/departments')}
-                      tooltip="Départements"
-                    >
+                    <SidebarMenuButton onClick={() => navigate('/departments')} isActive={isActive('/departments')} tooltip="Départements">
                       <Building2 />
                       <span>Départements</span>
                     </SidebarMenuButton>
@@ -150,13 +134,13 @@ export function AppSidebar() {
 
       </SidebarContent>
 
-      {/* ---- FOOTER : PROFIL ---- */}
+      {/* ---- FOOTER PROFIL ---- */}
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+                <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent w-full">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-full bg-slate-800 text-white font-bold text-sm">
                     {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
                   </div>
@@ -168,17 +152,11 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" className="w-56 rounded-lg">
-                <DropdownMenuItem
-                  onClick={() => navigate('/profile')}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <DropdownMenuItem onClick={() => navigate('/profile')} className="flex items-center gap-2 cursor-pointer">
                   <User size={16} />
                   Mon profil
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={signOut}
-                  className="flex items-center gap-2 text-red-500 cursor-pointer"
-                >
+                <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 text-red-500 cursor-pointer">
                   <LogOut size={16} />
                   Déconnexion
                 </DropdownMenuItem>

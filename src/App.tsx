@@ -10,18 +10,17 @@ import Register from './pages/auth/Register'
 import Dashboard from './pages/dashboard/Dashboard'
 import TicketsList from './pages/tickets/TicketsList'
 import AssetsList from './pages/assets/AssetsList'
-import AssetForm from './pages/assets/AssetForm'
-import AssetDetail from './pages/assets/AssetDetail'
 import Profile from './pages/profile/Profile'
 import UsersList from './pages/admin/UsersList'
 import Departments from './pages/admin/Departments'
 import Stats from './pages/stats/Stats'
+import Journal from './pages/journal/Journal'
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
   const { profile, loading } = useAuth()
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <p className="text-slate-500">Chargement...</p>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <p className="text-muted-foreground">Chargement...</p>
     </div>
   )
   if (!profile) return <Navigate to="/login" replace />
@@ -44,23 +43,20 @@ export default function App() {
           {/* DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-          {/* TICKETS - une seule route, tout géré en inline */}
+          {/* TICKETS - inline */}
           <Route path="/tickets" element={<ProtectedRoute><TicketsList /></ProtectedRoute>} />
 
-          {/* ÉQUIPEMENTS */}
+          {/* ÉQUIPEMENTS - inline */}
           <Route path="/assets" element={
             <ProtectedRoute roles={['admin_principal', 'admin_it', 'adjoint_it']}>
               <AssetsList />
             </ProtectedRoute>
           } />
-          <Route path="/nouvel-equipement" element={
+
+          {/* JOURNAL IT */}
+          <Route path="/journal" element={
             <ProtectedRoute roles={['admin_principal', 'admin_it', 'adjoint_it']}>
-              <AssetForm />
-            </ProtectedRoute>
-          } />
-          <Route path="/asset/:id" element={
-            <ProtectedRoute roles={['admin_principal', 'admin_it', 'adjoint_it']}>
-              <AssetDetail />
+              <Journal />
             </ProtectedRoute>
           } />
 
